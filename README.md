@@ -43,5 +43,5 @@ A powerful browser userscript designed for Amazon sellers and power users. This 
 Feel free to fork this project, open issues, or submit pull requests to improve the extraction logic or add support for new Amazon layouts.
 
 ---
-**Author**: [Smartrwl](https://github.com/smartrwl)  
+**Author**: [Smartrwl](https://github.com/smart-rwl)  
 *Disclaimer: This tool is for educational and data research purposes. Please adhere to Amazon's Terms of Service while using automation tools.*
