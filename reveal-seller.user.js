@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         Reveal Seller - (Auto-CSV + Clickable Ratings + Reset)
-// @name:de      Reveal Seller - (Auto-CSV + Klickbare Bewertungen + Zurücksetzen)
-// @name:fr      Reveal Seller - (Auto-CSV + Évaluations cliquables + Réinitialiser)
-// @name:es      Reveal Seller - (Auto-CSV + Calificaciones clicables + Restablecer)
-// @name:it      Reveal Seller - (Auto-CSV + Valutazioni cliccabili + Ripristina)
-// @name:jp      Reveal Seller - (自動CSV + クリック可能な評価 + リセット)
-// @name:tr      Reveal Seller - (Otomatik CSV + Tıklanabilir Değerlendirmeler + Sıfırla)
+// @name         Amazon Seller Revealer - (Auto-CSV + Clickable Ratings + Reset)
+// @name:de      Amazon Seller Revealer - (Auto-CSV + Klickbare Bewertungen + Zurücksetzen)
+// @name:fr      Amazon Seller Revealer - (Auto-CSV + Évaluations cliquables + Réinitialiser)
+// @name:es      Amazon Seller Revealer - (Auto-CSV + Calificaciones clicables + Restablecer)
+// @name:it      Amazon Seller Revealer - (Auto-CSV + Valutazioni cliccabili + Ripristina)
+// @name:jp      Amazon Seller Revealer - (自動CSV + クリック可能な評価 + リセット)
+// @name:tr      Amazon Seller Revealer - (Otomatik CSV + Tıklanabilir Değerlendirmeler + Sıfırla)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
 // @version      1.2.2
