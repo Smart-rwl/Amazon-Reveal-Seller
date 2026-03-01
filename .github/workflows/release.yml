@@ -1,0 +1,37 @@
+name: Auto-Release Userscript
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'reveal-seller.user.js' # Only runs when the script file changes
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: get_version
+        run: |
+          # Pulls the version number directly from the Userscript header
+          VERSION=$(grep "@version" reveal-seller.user.js | awk '{print $3}')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          files: reveal-seller.user.js
+          body: |
+            Automated release for version ${{ steps.get_version.outputs.VERSION }}.
+            Install/Update here: [reveal-seller.user.js](https://github.com/${{ github.repository }}/raw/main/reveal-seller.user.js)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
