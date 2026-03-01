@@ -11,7 +11,7 @@ Only the latest version of **Amazon Seller Revealer** is supported for security 
 ## Reporting a Vulnerability
 I take the security of this tool and its users seriously. If you find a security vulnerability, please do **not** open a public GitHub issue. Instead, please report it privately:
 
-1. **Email:** [Optional: Your email or a link to your LinkedIn/Contact Form]
+1. **Email:** rvndrrwl@gmail.com
 2. **GitHub Private Reporting:** Use the "Report a vulnerability" button under the **Security** tab of this repository.
 
 ### What to include:
