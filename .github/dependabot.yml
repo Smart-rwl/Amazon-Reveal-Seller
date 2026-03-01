@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # Check for updates to GitHub Actions (like checkout or release-drafter)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
