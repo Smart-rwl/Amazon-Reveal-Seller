@@ -8,14 +8,8 @@
 // @name:tr      Reveal Seller - (Otomatik CSV + Tıklanabilir Değerlendirmeler + Sıfırla)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      1.1.0
+// @version      1.2.0
 // @description  Shows seller name and hybrid ratings. Auto-collects data for CSV as you scroll with a reset option.
-// @description:de Zeigt den Verkäufernamen und Hybrid-Bewertungen an. Sammelt automatisch Daten für CSV beim Scrollen mit einer Reset-Option.
-// @description:fr Affiche le nom du vendeur et les évaluations hybrides. Collecte automatiquement les données pour le CSV au fur et à mesure que vous faites défiler avec une option de réinitialisation.
-// @description:es Muestra el nombre del vendedor y las calificaciones híbridas. Recopila automáticamente datos para CSV a medida que te desplazas con una opción de restablecimiento.
-// @description:it Mostra il nome del venditore e le valutazioni ibride. Raccoglie automaticamente i dati per CSV mentre scorri con un'opzione di ripristino.
-// @description:jp 出品者名とハイブリッド評価を表示します。スクロールに合わせてCSVデータを自動収集し、リセットオプションも備えています。
-// @description:tr Satıcı adını ve hibrit derecelendirmeleri gösterir. Sıfırlama seçeneği ile kaydırdıkça CSV için verileri otomatik olarak toplar.
 // @match        https://www.amazon.co.jp/*
 // @match        https://www.amazon.co.uk/*
 // @match        https://www.amazon.com/*
@@ -67,6 +61,7 @@
     'id': 'sb-settings',
     'title': 'SoldBy Settings',
     'fields': {
+      'auto-csv-enabled': { 'label': 'Enable Auto-CSV Collection', 'type': 'checkbox', 'default': true }, // 👈 ADDON: New Toggle
       'countries': { 'section': ['Countries to highlight', 'ISO codes'], 'label': 'List of country codes', 'type': 'text', 'default': 'CN, HK' },
       'unknown': { 'label': 'Highlight unknown countries', 'type': 'checkbox', 'default': true },
       'hide': { 'label': 'Hide highlighted products', 'type': 'checkbox', 'default': false },
@@ -242,6 +237,9 @@
     }
 
     function collectCSVData(asin, seller, sid, pRating, sScore) {
+        // 👈 ADDON: Only collect data if the setting is checked
+        if (GM_config.get('auto-csv-enabled') === false) return; 
+
         if (!collectedData.some(item => item.asin === asin)) {
             collectedData.push({ asin, seller, sellerId: sid || "N/A", pRating, sScore });
             updateCSVButtonCount();
@@ -324,7 +322,7 @@
     .seller-loading { width: 10px; height: 10px; border: 2px solid #ff99004d; border-top-color: #ff9900; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .sb-btn { background: #f0f2f2; border: 1px solid #d5d9d9; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
-    .sb-options { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: white; z-index: 999; padding: 1rem; border: 1px solid #ccc; width: 400px; }
+    .sb-options { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: white; z-index: 9999; padding: 1rem; border: 1px solid #ccc; width: 400px; }
     .sb-options--backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 199; }
   `;
   document.head.appendChild(style);
