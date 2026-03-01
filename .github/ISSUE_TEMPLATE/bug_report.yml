@@ -1,0 +1,49 @@
+name: 🐛 Bug Report
+description: Report a problem with the script (e.g., ratings not showing)
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please provide as much detail as possible to help me fix it.
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Amazon Domain
+      description: Which Amazon site were you using?
+      options:
+        - amazon.in
+        - amazon.com
+        - amazon.co.jp
+        - amazon.de
+        - Other (please specify in comments)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Script Version
+      description: What version of the script are you using? (e.g., 1.2.3)
+      placeholder: v1.2.x
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What is the issue?
+      description: Describe the bug clearly.
+      placeholder: "Example: The seller flag is not showing on the Bestsellers page."
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Example Product Link
+      description: Please provide a link to a search result or product page where the bug occurs.
+      placeholder: "https://www.amazon.in/dp/B0..."
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Logs (Optional)
+      description: If you know how to open the browser console (F12), paste any red error messages here.
+      render: shell
