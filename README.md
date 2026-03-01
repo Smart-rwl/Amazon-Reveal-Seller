@@ -38,6 +38,9 @@ A powerful browser userscript designed for Amazon sellers and power users. This 
 * **Grant**: `GM.getValue`, `GM.setValue` (Used for persistent configuration)
 * **Require**: `GM_config` (For the settings interface)
 
+## 💬 Community & Support
+Have a question or a sourcing tip to share? Join our [GitHub Discussions](https://github.com/Smart-rwl/Amazon-Reveal-Seller/discussions)!
+
 ## 🤝 Contributing
 
 Feel free to fork this project, open issues, or submit pull requests to improve the extraction logic or add support for new Amazon layouts.
