@@ -10,6 +10,12 @@
 // @author       Smartrwl
 // @version      1.2.0
 // @description  Shows seller name and hybrid ratings. Auto-collects data for CSV as you scroll with a reset option.
+// @description:de Zeigt den Verkäufernamen und Hybrid-Bewertungen an. Sammelt automatisch Daten für CSV beim Scrollen mit einer Reset-Option.
+// @description:fr Affiche le nom du vendeur et les évaluations hybrides. Collecte automatiquement les données pour le CSV au fur et à mesure que vous faites défiler avec une option de réinitialisation.
+// @description:es Muestra el nombre del vendedor y las calificaciones híbridas. Recopila automáticamente datos para CSV a medida que te desplazas con una opción de restablecimiento.
+// @description:it Mostra il nome del venditore e le valutazioni ibride. Raccoglie automaticamente i dati per CSV mentre scorri con un'opzione di ripristino.
+// @description:jp 出品者名とハイブリッド評価を表示します。スクロールに合わせてCSVデータを自動収集し、リセットオプションも備えています。
+// @description:tr Satıcı adını ve hibrit derecelendirmeleri gösterir. Sıfırlama seçeneği ile kaydırdıkça CSV için verileri otomatik olarak toplar.
 // @match        https://www.amazon.co.jp/*
 // @match        https://www.amazon.co.uk/*
 // @match        https://www.amazon.com/*
