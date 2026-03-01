@@ -4,18 +4,28 @@ categories:
   - title: '🚀 Features'
     labels:
       - 'feature'
-      - 'enhancement'
   - title: '🐛 Bug Fixes'
     labels:
       - 'bug'
-      - 'fix'
   - title: '🧰 Maintenance'
     labels:
-      - 'chore'
       - 'documentation'
+      - 'chore'
+
+# 👈 ADD THIS SECTION
+autolabeler:
+  - label: 'feature'
+    files:
+      - 'reveal-seller.user.js'
+  - label: 'documentation'
+    files:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+  - label: 'chore'
+    files:
+      - '.github/**/*'
+
 template: |
   ## What’s Changed
 
   $CHANGES
-
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
