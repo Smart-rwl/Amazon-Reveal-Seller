@@ -8,7 +8,7 @@
 // @name:tr      Reveal Seller - (Otomatik CSV + Tıklanabilir Değerlendirmeler + Sıfırla)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      1.2.0
+// @version      1.2.2
 // @description  Shows seller name and hybrid ratings. Auto-collects data for CSV as you scroll with a reset option.
 // @description:de Zeigt den Verkäufernamen und Hybrid-Bewertungen an. Sammelt automatisch Daten für CSV beim Scrollen mit einer Reset-Option.
 // @description:fr Affiche le nom du vendeur et les évaluations hybrides. Collecte automatiquement les données pour le CSV au fur et à mesure que vous faites défiler avec une option de réinitialisation.
