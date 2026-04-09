@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Amazon Seller Revealer - (Auto-CSV + Clickable Ratings + Reset)
+// @name         Amazon Seller Revealer - (Auto-CSV + Sheets + Safe Scraping)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      1.3.0
-// @description  Enhanced version with throttling, expiry, and stability improvements
+// @version      2.0.0
+// @description  Full upgraded version with Google Sheets + throttling + expiry + stability
 // @match        https://www.amazon.*/*
 // @require      https://openuserjs.org/src/libs/sizzle/GM_config.min.js
 // @grant        GM.getValue
@@ -14,12 +14,16 @@
 (function () {
 'use strict';
 
+/* ================== 🔥 CONFIG ================== */
+const GOOGLE_SHEET_WEBHOOK = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+/* ================== STATE ================== */
 let collectedData = [];
 let fetchQueue = [];
 let activeFetches = 0;
 const MAX_CONCURRENT = 3;
 
-// -------------------- 🔥 THROTTLED FETCH --------------------
+/* ================== UTIL ================== */
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 async function queuedFetch(url) {
@@ -49,59 +53,74 @@ async function processQueue() {
   processQueue();
 }
 
-// -------------------- STORAGE HELPERS --------------------
 function isExpired(data, maxDays) {
   if (!data || !data.ts) return true;
   const age = (Date.now() - data.ts) / (1000 * 60 * 60 * 24);
   return age > maxDays;
 }
 
-// -------------------- MAIN INIT --------------------
+/* ================== GOOGLE SHEETS ================== */
+function sendToGoogleSheets(row) {
+  if (!GOOGLE_SHEET_WEBHOOK || GOOGLE_SHEET_WEBHOOK.includes("PASTE")) return;
+
+  try {
+    fetch(GOOGLE_SHEET_WEBHOOK, {
+      method: "POST",
+      body: JSON.stringify(row),
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (e) {
+    console.warn("Sheet upload failed:", e);
+  }
+}
+
+/* ================== INIT ================== */
 function onInit() {
 
 function showData() {
-    getAsin();
-    const selectors = [
-        'div[data-asin]:not([data-asin=""]):not([data-processed])',
-        'li[data-asin]:not([data-asin=""]):not([data-processed])',
-        '#gridItemRoot:not([data-processed])'
-    ];
+  getAsin();
 
-    document.querySelectorAll(selectors.join(',')).forEach((product) => {
-        product.dataset.processed = "true";
-        createInfoBox(product);
+  const selectors = [
+    'div[data-asin]:not([data-asin=""]):not([data-processed])',
+    'li[data-asin]:not([data-asin=""]):not([data-processed])',
+    '#gridItemRoot:not([data-processed])'
+  ];
 
-        const asinCache = JSON.parse(localStorage.getItem(asinKey(product)));
+  document.querySelectorAll(selectors.join(',')).forEach((product) => {
+    product.dataset.processed = "true";
+    createInfoBox(product);
 
-        if (asinCache && !isExpired(asinCache, GM_config.get('max-asin-age'))) {
-            getSellerIdAndNameFromLocalStorage(product);
-        } else {
-            getSellerIdAndNameFromProductPage(product);
-        }
-    });
+    const asinCache = JSON.parse(localStorage.getItem(asinKey(product)));
+
+    if (asinCache && !isExpired(asinCache, 1)) {
+      getSellerIdAndNameFromLocalStorage(product);
+    } else {
+      getSellerIdAndNameFromProductPage(product);
+    }
+  });
 }
 
 const observer = new MutationObserver(showData);
 observer.observe(document.body, { childList: true, subtree: true });
 showData();
 
-// -------------------- ASIN DETECTION --------------------
+/* ================== ASIN ================== */
 function getAsin() {
   document.querySelectorAll('a[href*="/dp/"]').forEach(link => {
     const match = link.href.match(/\/dp\/(.{10})/);
-    if (match && link.closest('[data-asin]') == null) {
-      const parent = link.closest('div,li');
+    if (match) {
+      const parent = link.closest('[data-asin]');
       if (parent) parent.dataset.asin = match[1];
     }
   });
 }
 
-// -------------------- PRODUCT FETCH --------------------
+/* ================== PRODUCT ================== */
 async function getSellerIdAndNameFromProductPage(product) {
+
   if (!product.dataset.asin) return;
 
-  const link = location.origin + '/dp/' + product.dataset.asin;
-  const html = await queuedFetch(link);
+  const html = await queuedFetch(location.origin + '/dp/' + product.dataset.asin);
   if (!html) return;
 
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -123,7 +142,6 @@ async function getSellerIdAndNameFromProductPage(product) {
       sellerName = html.includes('Amazon') ? 'Amazon' : 'Unknown';
     }
 
-    // 🔥 Seller Type Detection
     if (html.includes("Fulfilled by Amazon")) sellerType = "FBA";
     if (sellerName === "Amazon") sellerType = "Amazon";
 
@@ -147,14 +165,14 @@ async function getSellerIdAndNameFromProductPage(product) {
   }
 }
 
-// -------------------- SELLER FETCH --------------------
+/* ================== SELLER ================== */
 async function getSellerCountryAndRatingfromSellerPage(product) {
 
-  const sellerCache = JSON.parse(localStorage.getItem(sellerKey(product)));
+  const cache = JSON.parse(localStorage.getItem(sellerKey(product)));
 
-  if (sellerCache && !isExpired(sellerCache, GM_config.get('max-seller-age'))) {
-      getSellerCountryAndRatingfromLocalStorage(product);
-      return;
+  if (cache && !isExpired(cache, 7)) {
+    getSellerCountryAndRatingfromLocalStorage(product);
+    return;
   }
 
   const html = await queuedFetch(location.origin + '/sp?seller=' + product.dataset.sellerId);
@@ -201,7 +219,7 @@ async function getSellerCountryAndRatingfromSellerPage(product) {
   }
 }
 
-// -------------------- CSV --------------------
+/* ================== CSV + SHEETS ================== */
 function collectCSVData(product) {
 
   if (collectedData.length > 5000) return;
@@ -209,7 +227,8 @@ function collectCSVData(product) {
   const asin = product.dataset.asin;
 
   if (!collectedData.some(item => item.asin === asin)) {
-    collectedData.push({
+
+    const row = {
       asin,
       seller: product.dataset.sellerName,
       sellerId: product.dataset.sellerId,
@@ -218,20 +237,25 @@ function collectCSVData(product) {
       type: product.dataset.sellerType,
       url: location.href,
       date: new Date().toISOString()
-    });
+    };
+
+    collectedData.push(row);
+
+    // 🔥 GOOGLE SHEETS AUTO PUSH
+    sendToGoogleSheets(row);
 
     updateCSVButtonCount();
   }
 }
 
-// -------------------- EXISTING FUNCTIONS KEPT --------------------
+/* ================== EXISTING ================== */
 function getSellerIdAndNameFromLocalStorage(product) {
-    const data = JSON.parse(localStorage.getItem(asinKey(product)));
-    product.dataset.sellerName = data.sn;
-    product.dataset.sellerId = data.sid || "";
-    product.dataset.productRating = data.pr || "N/A";
-    product.dataset.sellerType = data.st || "FBM";
-    setSellerDetails(product);
+  const data = JSON.parse(localStorage.getItem(asinKey(product)));
+  product.dataset.sellerName = data.sn;
+  product.dataset.sellerId = data.sid || "";
+  product.dataset.productRating = data.pr || "N/A";
+  product.dataset.sellerType = data.st || "FBM";
+  setSellerDetails(product);
 }
 
 function setSellerDetails(product) {
