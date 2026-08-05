@@ -7,7 +7,7 @@
 // @name:hi      Amazon विक्रेता रिवीलर - (Auto-CSV + Sheets)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      2.1.0
+// @version      2.1.1
 // @description  Reveals third-party seller identities, origin countries and hybrid ratings on Amazon search & bestseller pages. Auto-CSV, Google Sheets sync, country highlighting, settings panel, captcha-safe throttled scraping.
 // @description:de  Zeigt Verkäufer-Identitäten, Herkunftsländer und Bewertungen direkt in den Amazon-Suchergebnissen. Auto-CSV, Google Sheets, Länder-Hervorhebung.
 // @description:fr  Révèle l'identité des vendeurs tiers, leur pays d'origine et les notes hybrides sur Amazon. Auto-CSV, Google Sheets, surlignage par pays.
@@ -287,6 +287,11 @@ createFooterButtons();
 updateCSVButtonCount();
 
 function showData() {
+  // Self-healing UI: Amazon's dynamic re-renders can wipe injected elements.
+  // Re-create the toolbar and styles if they've been removed.
+  if (!document.getElementById('sb-toolbar')) createFooterButtons();
+  if (!document.getElementById('sb-styles')) injectStyles();
+
   getAsin();
 
   const selectors = [
@@ -541,6 +546,7 @@ function collectCSVData(product) {
 
 /* ================== FOOTER TOOLBAR ================== */
 function createFooterButtons() {
+  if (document.getElementById('sb-toolbar')) return; // never duplicate
   const bar = document.createElement('div');
   bar.id = 'sb-toolbar';
 
@@ -708,7 +714,9 @@ function populateInfoBox(product) {
 
 /* ================== STYLES ================== */
 function injectStyles() {
+  if (document.getElementById('sb-styles')) return; // never duplicate
   const style = document.createElement('style');
+  style.id = 'sb-styles';
   style.textContent = `
     .seller-info {
       font-size: 12px;
