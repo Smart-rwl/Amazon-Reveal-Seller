@@ -7,7 +7,7 @@
 // @name:hi      Amazon विक्रेता रिवीलर - (Auto-CSV + Sheets)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      2.1.1
+// @version      2.1.2
 // @description  Reveals third-party seller identities, origin countries and hybrid ratings on Amazon search & bestseller pages. Auto-CSV, Google Sheets sync, country highlighting, settings panel, captcha-safe throttled scraping.
 // @description:de  Zeigt Verkäufer-Identitäten, Herkunftsländer und Bewertungen direkt in den Amazon-Suchergebnissen. Auto-CSV, Google Sheets, Länder-Hervorhebung.
 // @description:fr  Révèle l'identité des vendeurs tiers, leur pays d'origine et les notes hybrides sur Amazon. Auto-CSV, Google Sheets, surlignage par pays.
@@ -136,6 +136,7 @@ async function saveSettings() {
 async function queuedFetch(url) {
   return new Promise((resolve) => {
     fetchQueue.push({ url, resolve });
+    updateQueueStatus();
     processQueue();
   });
 }
@@ -154,14 +155,18 @@ async function processQueue() {
   activeFetches++;
 
   try {
-    await delay(700 + Math.random() * 600);
-    const res = await fetch(url);
+    await delay(400 + Math.random() * 500);
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 15000); // never let one request jam a slot
+    const res = await fetch(url, { signal: ctrl.signal });
     const text = await res.text();
+    clearTimeout(timeout);
 
     if (isCaptchaPage(text)) {
       console.warn("[SellerRevealer] Robot check detected — pausing fetches for 5 minutes.");
       pausedUntil = Date.now() + CAPTCHA_COOLDOWN_MS;
       fetchQueue.push({ url, resolve }); // requeue for after the cool-down
+      updateQueueStatus();
       showToast("⚠️ Amazon robot check detected. Pausing data collection for 5 min.");
     } else {
       resolve(text);
@@ -172,6 +177,7 @@ async function processQueue() {
   }
 
   activeFetches--;
+  updateQueueStatus();
   processQueue();
 }
 
@@ -276,6 +282,22 @@ function showToast(msg) {
   toast._timer = setTimeout(() => toast.classList.remove('sb-show'), 4000);
 }
 
+/* ================== QUEUE STATUS BADGE ================== */
+function updateQueueStatus() {
+  const el = document.getElementById('sb-status');
+  if (!el) return;
+  const pending = fetchQueue.length + activeFetches;
+  if (Date.now() < pausedUntil) {
+    el.textContent = '⏸ Paused (robot check)';
+    el.style.display = 'inline-flex';
+  } else if (pending > 0) {
+    el.textContent = `⏳ ${pending} left`;
+    el.style.display = 'inline-flex';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 /* ================== INIT ================== */
 async function onInit() {
 
@@ -310,10 +332,23 @@ function showData() {
     if (asinCache && !isExpired(asinCache, SETTINGS.cacheDaysAsin)) {
       getSellerIdAndNameFromLocalStorage(product);
     } else {
-      getSellerIdAndNameFromProductPage(product);
+      // Viewport-priority: fetch only when the card is on/near screen,
+      // so what you're actually looking at loads first instead of the
+      // whole page queueing up in DOM order.
+      viewObserver.observe(product);
     }
   });
 }
+
+// Fires when a product card scrolls to within 400px of the viewport
+const viewObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      viewObserver.unobserve(entry.target);
+      getSellerIdAndNameFromProductPage(entry.target);
+    }
+  });
+}, { rootMargin: '400px' });
 
 // Debounced observer — Amazon pages mutate constantly; without this the
 // handler fires hundreds of times per scroll.
@@ -550,6 +585,11 @@ function createFooterButtons() {
   const bar = document.createElement('div');
   bar.id = 'sb-toolbar';
 
+  const status = document.createElement('span');
+  status.id = 'sb-status';
+  status.style.display = 'none';
+  bar.appendChild(status);
+
   const settingsBtn = document.createElement('button');
   settingsBtn.id = 'sb-settings';
   settingsBtn.textContent = '⚙️ SoldBy';
@@ -760,6 +800,14 @@ function injectStyles() {
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
     }
     #sb-toolbar button:hover { background: #37475a; }
+    #sb-toolbar #sb-status {
+      background: rgba(15,17,17,.85);
+      color: #ffd814;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      align-items: center;
+    }
 
     #sb-panel-overlay {
       position: fixed;
