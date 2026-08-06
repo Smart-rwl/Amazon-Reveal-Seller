@@ -7,7 +7,7 @@
 // @name:hi      Amazon विक्रेता रिवीलर - (Auto-CSV + Sheets)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      2.1.2
+// @version      2.2.0
 // @description  Reveals third-party seller identities, origin countries and hybrid ratings on Amazon search & bestseller pages. Auto-CSV, Google Sheets sync, country highlighting, settings panel, captcha-safe throttled scraping.
 // @description:de  Zeigt Verkäufer-Identitäten, Herkunftsländer und Bewertungen direkt in den Amazon-Suchergebnissen. Auto-CSV, Google Sheets, Länder-Hervorhebung.
 // @description:fr  Révèle l'identité des vendeurs tiers, leur pays d'origine et les notes hybrides sur Amazon. Auto-CSV, Google Sheets, surlignage par pays.
@@ -151,7 +151,8 @@ async function processQueue() {
     return;
   }
 
-  const { url, resolve } = fetchQueue.shift();
+  const item = fetchQueue.shift();
+  const { url, resolve } = item;
   activeFetches++;
 
   try {
@@ -165,7 +166,12 @@ async function processQueue() {
     if (isCaptchaPage(text)) {
       console.warn("[SellerRevealer] Robot check detected — pausing fetches for 5 minutes.");
       pausedUntil = Date.now() + CAPTCHA_COOLDOWN_MS;
-      fetchQueue.push({ url, resolve }); // requeue for after the cool-down
+      item.tries = (item.tries || 0) + 1;
+      if (item.tries <= 2) {
+        fetchQueue.push(item); // requeue for after the cool-down
+      } else {
+        resolve(null); // give up on this URL after repeated robot checks
+      }
       updateQueueStatus();
       showToast("⚠️ Amazon robot check detected. Pausing data collection for 5 min.");
     } else {
@@ -372,6 +378,14 @@ function grabCardExtras(product) {
   const priceEl = product.querySelector('.a-price .a-offscreen');
   if (priceEl) product.dataset.price = priceEl.textContent.trim();
 
+  // Star rating is printed right on the search card — grab it for free
+  // instead of fetching the product page for it.
+  const starEl = product.querySelector('.a-icon-alt');
+  if (starEl) {
+    const m = starEl.textContent.match(/(\d+[.,]?\d*)/);
+    if (m) product.dataset.productRating = m[1].replace(',', '.');
+  }
+
   const reviewEl = product.querySelector(
     'span.a-size-base.s-underline-text, a[href*="#customerReviews"] span, .a-icon-star-small ~ span.a-size-small'
   );
@@ -381,10 +395,68 @@ function grabCardExtras(product) {
   }
 }
 
-/* ================== PRODUCT PAGE ================== */
+/* ================== PRODUCT — FAST PATH (All-Offers ajax) ================== */
+// The AOD ajax endpoint returns ~100KB instead of the 2–5MB full product
+// page: the single biggest speed win. Falls back to the full page below
+// if Amazon changes the endpoint or the layout differs.
+async function getSellerFromAOD(product) {
+  const asin = product.dataset.asin;
+  const html = await queuedFetch(
+    location.origin + '/gp/product/ajax/ref=aod_f_new?asin=' + asin +
+    '&pc=dp&experienceId=aodAjaxMain'
+  );
+  if (!html) return false;
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const pinned = doc.querySelector('#aod-pinned-offer') || doc;
+
+  const soldBy = pinned.querySelector('#aod-offer-soldBy');
+  if (!soldBy) return false;
+
+  let sellerId = null, sellerName = '', sellerType = 'FBM';
+
+  const link = soldBy.querySelector('a[href*="seller="]');
+  if (link) {
+    try {
+      sellerId = new URL(link.getAttribute('href'), location.origin).searchParams.get('seller');
+    } catch (e) { sellerId = null; }
+    sellerName = link.textContent.trim();
+  } else {
+    const nameEl = soldBy.querySelector('.a-color-base, span.a-size-small:last-child');
+    sellerName = nameEl ? nameEl.textContent.trim() : '';
+  }
+  if (!sellerName) return false;
+
+  const shipsFrom = pinned.querySelector('#aod-offer-shipsFrom');
+  if (shipsFrom && /amazon/i.test(shipsFrom.textContent)) sellerType = 'FBA';
+  if (/^amazon(\.[a-z.]+)?$/i.test(sellerName)) {
+    sellerName = 'Amazon';
+    sellerType = 'Amazon';
+  }
+
+  // Rating comes free from the search card (grabCardExtras)
+  const pRating = product.dataset.productRating || 'N/A';
+
+  product.dataset.sellerName = sellerName;
+  product.dataset.sellerId = sellerId || '';
+  product.dataset.productRating = pRating;
+  product.dataset.sellerType = sellerType;
+
+  localStorage.setItem(asinKey(product), JSON.stringify({
+    sid: sellerId, sn: sellerName, pr: pRating, st: sellerType, ts: Date.now()
+  }));
+
+  setSellerDetails(product);
+  return true;
+}
+
+/* ================== PRODUCT PAGE (fallback) ================== */
 async function getSellerIdAndNameFromProductPage(product) {
 
   if (!product.dataset.asin) return;
+
+  // Try the lightweight endpoint first
+  if (await getSellerFromAOD(product)) return;
 
   const html = await queuedFetch(location.origin + '/dp/' + product.dataset.asin);
   if (!html) return;
