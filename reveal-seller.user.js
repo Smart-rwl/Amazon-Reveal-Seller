@@ -7,7 +7,7 @@
 // @name:hi      Amazon विक्रेता रिवीलर - (Auto-CSV + Sheets)
 // @namespace    https://github.com/smartrwl
 // @author       Smartrwl
-// @version      2.2.0
+// @version      2.2.1
 // @description  Reveals third-party seller identities, origin countries and hybrid ratings on Amazon search & bestseller pages. Auto-CSV, Google Sheets sync, country highlighting, settings panel, captcha-safe throttled scraping.
 // @description:de  Zeigt Verkäufer-Identitäten, Herkunftsländer und Bewertungen direkt in den Amazon-Suchergebnissen. Auto-CSV, Google Sheets, Länder-Hervorhebung.
 // @description:fr  Révèle l'identité des vendeurs tiers, leur pays d'origine et les notes hybrides sur Amazon. Auto-CSV, Google Sheets, surlignage par pays.
@@ -294,10 +294,12 @@ function updateQueueStatus() {
   if (!el) return;
   const pending = fetchQueue.length + activeFetches;
   if (Date.now() < pausedUntil) {
-    el.textContent = '⏸ Paused (robot check)';
+    el.textContent = '⏸ Paused — click to retry';
+    el.style.cursor = 'pointer';
     el.style.display = 'inline-flex';
   } else if (pending > 0) {
     el.textContent = `⏳ ${pending} left`;
+    el.style.cursor = 'default';
     el.style.display = 'inline-flex';
   } else {
     el.style.display = 'none';
@@ -660,6 +662,15 @@ function createFooterButtons() {
   const status = document.createElement('span');
   status.id = 'sb-status';
   status.style.display = 'none';
+  status.title = 'When paused: solve the captcha on any product page, then click here to resume';
+  status.addEventListener('click', () => {
+    if (Date.now() < pausedUntil) {
+      pausedUntil = 0;
+      updateQueueStatus();
+      processQueue();
+      showToast('▶️ Resumed. If robot checks continue, solve the captcha on a product page first.');
+    }
+  });
   bar.appendChild(status);
 
   const settingsBtn = document.createElement('button');
